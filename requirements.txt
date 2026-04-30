@@ -1,0 +1,16 @@
+# --- Core Machine Learning ---
+tensorflow==2.15.0      # Primary ML framework
+numpy>=1.23.5           # Numerical operations
+pillow>=10.0.0          # Image processing/loading
+
+# --- Computer Vision ---
+opencv-python-headless  # Lightweight CV2 for image manipulation
+
+# --- Web Backend (For the API) ---
+flask==3.0.0            # Minimalist web framework
+flask-cors              # Handling cross-origin requests
+gunicorn                # Production-grade WSGI server
+
+# --- Utilities ---
+python-dotenv           # Managing environment variables
+requests                # Handling external API calls
