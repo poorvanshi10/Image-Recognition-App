@@ -3,7 +3,7 @@ import numpy as np
 from flask import Flask, request, jsonify
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2, preprocess_input, decode_predictions
-
+from flask import Flask, request, jsonify, render_template # Add render_template here
 app = Flask(__name__)
 
 model = MobileNetV2(weights='imagenet')
@@ -13,7 +13,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.route('/')
 def home():
-    return jsonify({"message": "Aura Lens AI is online and ready!"})
+    return render_template('index.html')
 
 @app.route('/predict', methods=['POST'])
 def predict():
