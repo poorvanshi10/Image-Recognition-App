@@ -7,7 +7,11 @@ from flask import Flask, request, jsonify, render_template # Add render_template
 app = Flask(__name__)
 
 model = MobileNetV2(weights='imagenet')
+from pymongo import MongoClient
 
+client = MongoClient('mongodb://localhost:27017/')
+db = client['aura_lens_db']
+history_collection = db['scans']
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -35,7 +39,27 @@ def predict():
 
         predictions = model.predict(img_array)
         label = decode_predictions(predictions, top=1)[0][0]
-        
+        # Existing logic
+        predictions = model.predict(img_array)
+        label = decode_predictions(predictions, top=1)[0][0]
+
+        # ---- INSERT THIS BLOCK HERE ----
+        try:
+            history_collection.insert_one({
+                "object_detected": str(label[1]),
+                "confidence": float(label[2]),
+                "filename": str(file.filename)
+            })
+        except Exception as db_err:
+            print(f"MongoDB save failed: {db_err}")
+        # --------------------------------
+
+        # Existing return block follows right after
+        return jsonify({
+            "status": "Success",
+            "object_detected": label[1],
+            "confidence": float(label[2])
+        })
         return jsonify({
             "status": "Success",
             "object_detected": label[1],
