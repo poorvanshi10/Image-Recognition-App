@@ -67,6 +67,19 @@ def predict():
         })
     except Exception as e:
         return jsonify({"status": "Error", "message": str(e)}), 500
-
+@app.route('/history', methods=['GET'])
+def get_history():
+    try:
+        # Fetch the 10 most recent scans from MongoDB, excluding the internal database ID
+        scans = list(history_collection.find({}, {"_id": 0}).sort("_id", -1).limit(10))
+        return jsonify({
+            "status": "Success",
+            "history": scans
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "status": "Error",
+            "message": f"Failed to retrieve history: {str(e)}"
+        }), 500
 if __name__ == '__main__':
     app.run(debug=True)
