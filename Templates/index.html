@@ -1,13 +1,134 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Aura Lens AI</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Lens // Premium AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0b0a0f; }
+        .glass-panel {
+            background: rgba(20, 18, 30, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+        }
+        .purple-glow {
+            box-shadow: 0 0 25px rgba(168, 85, 247, 0.4);
+        }
+    </style>
 </head>
-<body>
-    <h1>Aura Lens: Image Recognition</h1>
-    <form action="/predict" method="post" enctype="multipart/form-data">
-        <input type="file" name="image" accept="image/*">
-        <button type="submit">Identify Object</button>
-    </form>
+<body class="text-gray-100 antialiased font-sans min-h-screen flex flex-col justify-between">
+
+    <header class="border-b border-purple-500/10 px-8 py-5 flex justify-between items-center bg-[#0d0b14]/80 backdrop-blur-md">
+        <div class="flex items-center gap-3">
+            <div class="h-3 w-3 rounded-full bg-purple-500 animate-pulse"></div>
+            <span class="text-xl font-bold tracking-wider uppercase text-purple-400">Aura Lens</span>
+        </div>
+        <span class="text-xs tracking-widest text-gray-500 uppercase">AI Software Layer v2.0</span>
+    </header>
+
+    <main class="flex-grow max-w-6xl w-full mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <section class="md:col-span-1 flex flex-col gap-6">
+            <div class="glass-panel p-6 rounded-2xl">
+                <h2 class="text-lg font-semibold mb-4 text-purple-300">Scan Input Engine</h2>
+                <form id="uploadForm" enctype="multipart/form-data" class="flex flex-col gap-4">
+                    <div class="border-2 border-dashed border-purple-500/20 hover:border-purple-500/50 rounded-xl p-8 text-center transition cursor-pointer relative bg-purple-950/5">
+                        <input type="file" name="image" id="fileInput" accept="image/*" required class="absolute inset-0 opacity-0 cursor-pointer">
+                        <p class="text-sm text-gray-400" id="fileNameDisplay">Drag & drop or click to upload matrix image</p>
+                    </div>
+                    <button type="submit" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-medium py-3 px-4 rounded-xl transition purple-glow">
+                        Execute Classification
+                    </button>
+                </form>
+            </div>
+            
+            <div id="resultContainer" class="glass-panel p-6 rounded-2xl hidden transition-all">
+                <h3 class="text-xs uppercase tracking-widest text-purple-400 font-bold mb-3">Analysis Matrix</h3>
+                <div class="flex flex-col gap-2">
+                    <div>
+                        <span class="text-xs text-gray-500">Object Type:</span>
+                        <p id="detectedObject" class="text-2xl font-bold text-white tracking-wide">-</p>
+                    </div>
+                    <div>
+                        <span class="text-xs text-gray-500">Confidence Metric:</span>
+                        <div class="w-full bg-gray-900 rounded-full h-2.5 mt-1">
+                            <div id="confidenceBar" class="bg-purple-500 h-2.5 rounded-full" style="width: 0%"></div>
+                        </div>
+                        <p id="confidenceScore" class="text-right text-xs text-purple-400 mt-1 font-mono">0.00%</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="md:col-span-2 glass-panel p-6 rounded-2xl flex flex-col">
+            <h2 class="text-lg font-semibold mb-4 text-purple-300">Historical Scans Cache</h2>
+            <div id="historyGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-grow content-start">
+                </div>
+        </section>
+    </main>
+
+    <footer class="border-t border-purple-500/10 px-8 py-4 text-center text-xs text-gray-600 tracking-wider">
+        Aura Lens Application Hub // Engineering Project Core
+    </footer>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const uploadForm = document.getElementById('uploadForm');
+        const resultContainer = document.getElementById('resultContainer');
+        const historyGrid = document.getElementById('historyGrid');
+
+        // Dynamically show file names upon staging
+        fileInput.addEventListener('change', (e) => {
+            if(e.target.files.length > 0) {
+                fileNameDisplay.innerText = e.target.files[0].name;
+                fileNameDisplay.classList.add('text-purple-300');
+            }
+        });
+
+        // Pull historical metadata cleanly from MongoDB records
+        async function fetchHistoryCache() {
+            try {
+                const res = await fetch('/history');
+                const data = await res.json();
+                if(data.status === 'Success') {
+                    historyGrid.innerHTML = data.history.map(item => `
+                        <div class="bg-[#13111c] border border-purple-500/10 p-4 rounded-xl flex flex-col justify-between hover:border-purple-500/30 transition">
+                            <span class="text-xs text-gray-500 truncate mb-1">${item.filename}</span>
+                            <div class="flex justify-between items-baseline">
+                                <h4 class="font-bold text-gray-200 tracking-wide">${item.object_detected}</h4>
+                                <span class="font-mono text-xs text-purple-400">${(item.confidence * 100).toFixed(1)}%</span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch(err) { console.error("Error reading cache stream:", err); }
+        }
+
+        // Handle async image submissions
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(uploadForm);
+            
+            try {
+                const response = await fetch('/predict', { method: 'POST', body: formData });
+                const data = await response.json();
+                
+                if(response.ok) {
+                    document.getElementById('detectedObject').innerText = data.object_detected;
+                    const formattedScore = (data.confidence * 100).toFixed(2) + '%';
+                    document.getElementById('confidenceScore').innerText = formattedScore;
+                    document.getElementById('confidenceBar').style.width = formattedScore;
+                    
+                    resultContainer.classList.remove('hidden');
+                    fetchHistoryCache(); // Asynchronously reload cache records
+                } else { alert('Classification Error: ' + data.message); }
+            } catch(error) { alert('System connectivity interruption.'); }
+        });
+
+        // Bootstrap load the history layout components instantly on startup
+        fetchHistoryCache();
+    </script>
 </body>
 </html>
